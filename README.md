@@ -52,6 +52,23 @@
 
 사용하여 사각형의 면적을 계산하는 메소드 `Area`를 작성하세요.
 
+#### 고루틴과 채널
+
+문제 1: 기본적인 고루틴 생성
+고루틴을 생성하여 "Hello, World!"를 출력하는 Go 프로그램을 작성하세요.
+
+문제 2: 채널을 통한 데이터 전송
+정수를 보내고 받는 간단한 고루틴과 채널을 사용하는 프로그램을 작성하세요. 메인 고루틴에서는 1부터 10까지의 수를 채널에 보내고, 생성된 고루틴에서는 채널에서 수를 받아 출력하세요.
+
+문제 3: 버퍼 있는 채널
+버퍼를 가진 채널을 생성하고, 버퍼가 꽉 찰 때까지 숫자를 채널에 보내는 프로그램을 작성하세요. 채널의 버퍼 크기는 5로 설정하세요. 고루틴에서는 채널로부터 숫자를 받아 출력하세요.
+
+문제 4: 채널을 이용한 고루틴 동기화
+두 개의 고루틴을 생성하여, 하나는 'Ping', 다른 하나는 'Pong'을 출력하도록 하세요. 이 두 고루틴이 서로 동기화되어 번갈아가면서 출력할 수 있도록 채널을 사용하세요.
+
+문제 5: 채널을 이용한 모든 고루틴의 완료 기다리기
+5개의 고루틴을 생성하여 각각 다른 시간(1초, 2초, 3초, 4초, 5초) 동안 대기한 후, 완료 메시지를 출력하도록 하세요. 모든 고루틴이 완료될 때까지 메인 고루틴이 종료되지 않도록 하세요. 각 고루틴의 완료를 알리는 신호로 채널을 사용하세요.
+
 ### 답안
 
 1.
@@ -391,3 +408,165 @@ func main() {
 ```
 
 이 문제들을 통해 Go 언어의 기초를 연습할 수 있으며, 각각의 답안 코드는 해당 문제에 대해 올바르게 구현된 예시를 제공합니다.
+
+네, Go 언어의 goroutine과 channel을 사용하는 연습문제를 만들어 드리겠습니다. 각 문제는 goroutine과 channel의 기본적인 사용 방법을 이해하고 실습할 수 있도록 구성하겠습니다. 답안은 각 문제 뒤에 제공하겠습니다.
+
+### 연습문제 1: 기본적인 Goroutine 사용
+
+Go 프로그램을 작성하여, 100까지 숫자를 출력하는 데에 5개의 goroutine을 사용하세요. 각 goroutine은 20개의 숫자를 차례대로 출력해야 합니다.
+
+#### 답안
+
+```go
+package main
+
+import (
+	"fmt"
+	"sync"
+)
+
+func printNumbers(start int, wg *sync.WaitGroup) {
+	defer wg.Done()
+	end := start + 20
+	for i := start; i < end; i++ {
+		fmt.Println(i)
+	}
+}
+
+func main() {
+	var wg sync.WaitGroup
+	for i := 0; i < 5; i++ {
+		wg.Add(1)
+		go printNumbers(i*20, &wg)
+	}
+	wg.Wait()
+}
+```
+
+### 연습문제 2: Channel 기본
+
+정수들의 슬라이스를 받아 모든 정수의 합을 반환하는 함수를 goroutine과 channel을 이용하여 구현하세요.
+
+#### 답안
+
+```go
+package main
+
+import (
+	"fmt"
+)
+
+func sum(slice []int, c chan int) {
+	total := 0
+	for _, v := range slice {
+		total += v
+	}
+	c <- total
+}
+
+func main() {
+	slice := []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+	c := make(chan int)
+	go sum(slice, c)
+	total := <-c
+	fmt.Println("Total:", total)
+}
+```
+
+### 연습문제 3: 멀티 채널 사용
+
+3개의 goroutine을 생성하여 각각 1에서 100, 101에서 200, 201에서 300까지의 숫자를 각각 더하는 프로그램을 작성하세요. 각 결과를 메인 함수에서 받아 최종 합을 출력하세요.
+
+#### 답안
+
+```go
+package main
+
+import (
+	"fmt"
+)
+
+func sum(start, end int, c chan int) {
+	total := 0
+	for i := start; i <= end; i++ {
+		total += i
+	}
+	c <- total
+}
+
+func main() {
+	c := make(chan int)
+	go sum(1, 100, c)
+	go sum(101, 200, c)
+	go sum(201, 300, c)
+
+	result1, result2, result3 := <-c, <-c, <-c
+	fmt.Println("Final Total:", result1 + result2 + result3)
+}
+```
+
+### 연습문제 4: Select 문 사용
+
+2개의 channel을 생성하고 각각 다른 goroutine에서 데이터를 보냅니다. 메인 goroutine에서는 select 문을 사용하여 어느 channel로부터 데이터가 먼저 도착하는지 확인하고 출력하세요.
+
+#### 답안
+
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+func send(c chan int, delay time.Duration, value int) {
+	time.Sleep(delay)
+	c <- value
+}
+
+func main() {
+	c1 := make(chan int)
+	c2 := make(chan int)
+
+	go send(c1, 2*time.Second, 1)
+	go send(c2, 1*time.Second, 2)
+
+	select {
+	case res := <-c1:
+		fmt.Println("Received from c1:", res)
+	case res := <-c2:
+		fmt.Println("Received from c2:", res)
+	}
+}
+```
+
+### 연습문제 5: Buffer된 Channel
+
+100개의 정수를 buffer된 channel을 통해 보내고 받는 프로그램을 작성하세요. 받은 데이터를 출력하세요.
+
+#### 답안
+
+```go
+package main
+
+import (
+	"fmt"
+)
+
+func main() {
+	c := make(chan int, 100)
+
+	for i := 1; i <= 100; i++ {
+		c <- i
+	}
+	close(c)
+
+	for i := range c {
+		fmt.Println(i)
+	}
+}
+```
+
+이 연습문제들은 Go 언어의 동시성 패턴을 이해하고 실
+
+습하는 데 도움이 될 것입니다.
